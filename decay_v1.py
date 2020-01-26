@@ -71,11 +71,54 @@ def explore(I, a, T, dt, theta=0.5, makeplot=True):
         show()
     return E
 
+def solver_memsave(I, a, T, dt, theta, filename='sol.dat'):
+    """ 
+    Solve u'=-a*u, u(0) = I, for t in (0,T] with steps of dt.
+    Minimum use of memory. The solution is stored in a file
+    (with name filename) for later plotting
+    """
+
+    dt = float(dt)
+    Nt = int(round(T/dt))
+
+    outfile = open(filename,'w')
+    # u: time level n+1, u_1: time level n
+    t = 0
+    u_1 = I
+    outfile.write('%.16E %16.E\n' % (t, u_1))
+    for n in range(1, Nt+1):
+        u = (1-(1-theta)*a*dt)/(1 + theta*dt*a)*u_1
+        u_1 = u
+        t += dt
+        outfile.write('%.16E %.16E\n' % (t,u))
+    outfile.close()
+    return u, t
+
+def read_file(filename='sol.dat'):
+    infile = open(filename, 'r')
+    u = []; t = []
+    for line in infile:
+        words = line.split()
+        if len(words) != 2:
+            print ('Found more than two numbers on a line!', words)
+            sys.exit(1) # abort
+        t.append(float(words[0]))
+        u.append(float(words[1]))
+    return np.array(t), np.array(u)
+
+def read_file_numpy(filename='sol.dat'):
+    data = np.loadtxt(filename)
+    t = data[:,0]
+    u = data[:,1]
+    return t, u
+
+
 def main(I, a, T, dt_values, theta_values = (0, 0.5, 1)):
     print('theta dt error')
+    theta2name = {0:'FE', 1:'BE', 0.5:'CN'}
     for theta in theta_values:
         for dt in dt_values:
             E = explore(I, a, T, dt, theta, makeplot = True)
-            print('%4.1f %6.2f: %12.3E' % (theta, dt, E))
+            print('%s %4.1f %6.2f: %12.3E' % (theta2name[theta], theta, dt, E))
 
 main(I=1, a=2, T=5, dt_values=[0.4,0.04])

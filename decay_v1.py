@@ -1,4 +1,5 @@
-from numpy import *
+import numpy as np
+import scitools.std as st 
 
 def solver(I, a, T, dt, theta):
 
@@ -67,7 +68,7 @@ def explore(I, a, T, dt, theta=0.5, makeplot=True):
         title('%s, dt=%g' % (theta2name[theta],dt), fontsize = 25, fontweight ="bold", color = "red", fontstyle = "oblique")
         theta2name = {0:'FE', 1:'BE', 0.5:'CN'}
         savefig('%s_%g.png' % (theta2name[theta], dt))
-    #    savefig('%s_%g.pdf' % (theta2name[theta], dt))
+        savefig('%s_%g.pdf' % (theta2name[theta], dt))
         show()
     return E
 
@@ -121,4 +122,36 @@ def main(I, a, T, dt_values, theta_values = (0, 0.5, 1)):
             E = explore(I, a, T, dt, theta, makeplot = True)
             print('%s %4.1f %6.2f: %12.3E' % (theta2name[theta], theta, dt, E))
 
-main(I=1, a=2, T=5, dt_values=[0.4,0.04])
+def non_physical_behavior(I,a,T,dt,theta):
+    """
+    Given lists/arrays a and dt, and numbers I, dt, and theta, 
+    make a two-dimensional contour line B=0.5, where B=1>0.5
+    means oscillatory (non-stable) solution, and B=0<0.5 means
+    monotone solution of u'=-au
+    """
+
+    a=np.asarray(a); dt=np.asarray(dt)  # must be arrays
+    B=np.zeros((len(a),len(dt)))        # results
+    for i in range(len(a)):
+        for j in range(len(dt)):
+            u, t = solver(I, a[i], T, dt[j], theta)
+            # Does u have the right monotone decay properties?
+            correct_qualitative_behavior = True
+            for n in range (1, len(u)):
+                if u[n] > u[n-1]: # not decaying?
+                    correct_qualitative_behavior = False
+                    break # Jump out of the loop
+            B[i,j] = float(correct_qualitative_behavior)
+    a_, dt_ = st.ndgrid(a,dt) # make mesh of a and dt values
+    st.contour(a_, dt_, B, 1)
+    st.grid('on')
+    st.title('theta=%g' % theta)
+    st.xlabel('a')
+    st.ylabel('dt')
+    st.savefig('osc_region_theta_%s.png' % theta)
+    st.savefig('osc_region_theta_%s.pdf' % theta)
+    
+                    
+    
+
+#  main(I=1, a=2, T=5, dt_values=[0.4,0.04])
